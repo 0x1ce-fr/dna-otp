@@ -3,8 +3,6 @@
 > Proof of concept of an encryption system inspired by synthetic DNA cryptography.
 > Based on CNRS. (2026) HAL-05560338 CC BY 4.0
 
-![tests](https://github.com/0x1ce-fr/dna-otp/actions/workflows/tests.yml/badge.svg)
-
 ---
 
 ## The problem : secure key distribution
