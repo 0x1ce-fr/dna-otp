@@ -1,54 +1,54 @@
-# 🧬 DNA-OTP
+# DNA-OTP
 
-Proof of concept d'un système de chiffrement inspiré de la cryptographie par ADN synthétique.
+Proof of concept of an encryption system inspired by synthetic DNA cryptography.
 
-Basé sur les travaux franco-japonais publiés par le CNRS en 2026, qui démontrent qu'un brin d'ADN synthétique peut servir de clé One-Time Pad, le seul système de chiffrement prouvé mathématiquement inviolable (Shannon, 1949).
+Based on the Franco-Japanese research published by the CNRS in 2026, which demonstrates that a synthetic DNA strand can serve as a One-Time Pad key, the only encryption system proven mathematically unbreakable (Shannon, 1949).
 
-Ce projet simule l'intégralité du pipeline en Python, sans labo.
-
----
-
-## Comment ça marche
-
-```
-"Message secret"
-      ↓
-   Bits binaires
-      ↓
-   Séquence ADN (00→A, 01→T, 10→C, 11→G)
-      ↓
-   XOR avec une clé ADN aléatoire
-      ↓
-   TGAGCACGATCAGG...  (chiffré)
-```
-
-La clé ADN est générée aléatoirement et utilisée une seule fois, c'est le principe du One-Time Pad. Sans la clé, le message est mathématiquement impossible à déchiffrer.
+This project simulates the full pipeline in Python, without a lab.
 
 ---
 
-## Pourquoi c'est inviolable
-
-### La preuve de Shannon (1949)
-
-Shannon a démontré qu'un système de chiffrement est **inconditionnellement sûr** si et seulement si trois conditions sont réunies :
-
-1. **La clé est aussi longue que le message** — pas de répétition possible
-2. **La clé est parfaitement aléatoire** — chaque base A/T/C/G a exactement 25% de probabilité d'apparaître
-3. **La clé n'est utilisée qu'une seule fois** — one-time pad
-
-Quand ces trois conditions sont réunies, le chiffré ne contient **aucune information** sur le message original. Ce n'est pas "très difficile à casser" — c'est mathématiquement prouvé impossible, quelle que soit la puissance de calcul de l'adversaire.
-
-### Ce que montre la démo
+## How it works
 
 ```
-Combinaisons de clés possibles pour 56 bases : 4^56 ≈ 5.19 × 10³³
+"Secret message"
+      |
+   Binary bits
+      |
+   DNA sequence (00->A, 01->T, 10->C, 11->G)
+      |
+   XOR with a random DNA key
+      |
+   TGAGCACGATCAGG...  (ciphertext)
 ```
 
-Mais le brute force n'est même pas le bon angle d'attaque. Le vrai problème pour un attaquant : **n'importe quelle clé produit un déchiffrement syntaxiquement valide**. Sans la vraie clé, impossible de distinguer le bon résultat des milliards de faux positifs.
+The DNA key is generated randomly and used only once. This is the One-Time Pad principle. Without the key, the message is mathematically impossible to decrypt.
 
-### Le rôle de l'ADN
+---
 
-Dans la méthode du CNRS, la clé n'est pas un fichier — c'est un **brin d'ADN physique**. Il n'en existe que deux copies : une chez l'expéditeur, une chez le destinataire. Toute tentative d'interception laisse une trace moléculaire détectable. C'est ce qui rend l'échange de clé lui-même inviolable — le problème fondamental que le One-Time Pad logiciel ne résout pas.
+## Why it is unbreakable
+
+### Shannon's proof (1949)
+
+Shannon demonstrated that an encryption system is unconditionally secure if and only if three conditions are met:
+
+1. **The key is as long as the message** — no repetition is possible
+2. **The key is perfectly random** — each base A/T/C/G has exactly a 25% probability of appearing
+3. **The key is used only once** — one-time pad
+
+When these three conditions are met, the ciphertext contains no information about the original message. It is not "very hard to break" — it is mathematically proven impossible, regardless of the attacker's computing power.
+
+### What the demo shows
+
+```
+Possible key combinations for 56 bases : 4^56 ~ 5.19 x 10^33
+```
+
+But brute force is not even the right attack vector. The real problem for an attacker is that any key produces a syntactically valid decryption. Without the real key, there is no way to identify the correct result among billions of false positives.
+
+### The role of DNA
+
+In the CNRS method, the key is not a file — it is a physical DNA strand. Only two copies exist: one held by the sender, one by the receiver. Any interception attempt leaves a detectable molecular trace. This is what makes the key exchange itself unbreakable — the fundamental problem that software-based One-Time Pad does not solve.
 
 ---
 
@@ -56,46 +56,46 @@ Dans la méthode du CNRS, la clé n'est pas un fichier — c'est un **brin d'ADN
 
 ```
 dna_otp/
-├── core/
-│   └── dna.py              # Logique : encodage, XOR, chiffrement
-├── cli/
-│   ├── main.py             # Outil de chiffrement/déchiffrement
-│   ├── visualize.py        # Visualisation pédagogique du pipeline
-│   └── demo_security.py    # Démonstration de l'inviolabilité
-└── README.md
+|-- core/
+|   |-- dna.py              # Core logic: encoding, XOR, encryption
+|-- cli/
+|   |-- main.py             # Encryption and decryption tool
+|   |-- visualize.py        # Step-by-step pipeline walkthrough
+|   |-- demo_security.py    # Unbreakability demonstration
+|-- README.md
 ```
 
 ---
 
-## Utilisation
+## Usage
 
-**Chiffrer un message**
+**Encrypt a message**
 ```bash
-python cli/main.py encrypt "Message secret"
+python cli/main.py encrypt "Secret message"
 ```
 
-**Déchiffrer**
+**Decrypt**
 ```bash
 python cli/main.py decrypt
 ```
 
-**Visualiser le pipeline étape par étape**
+**Visualize the pipeline step by step**
 ```bash
-python cli/visualize.py "Message secret"
+python cli/visualize.py "Secret message"
 ```
 
-**Démontrer l'inviolabilité**
+**Demonstrate unbreakability**
 ```bash
-python cli/demo_security.py "Message secret"
+python cli/demo_security.py "Secret message"
 ```
 
 ---
 
-## Références
+## References
 
-- [CNRS — Cryptographie sur ADN (2026)](https://www.cnrs.fr/fr/presse/cryptographie-sur-adn-une-nouvelle-approche-franco-japonaise-fait-ses-preuves)
-- Shannon, C. (1949). *Communication Theory of Secrecy Systems*
+- [CNRS - DNA cryptography (2026)](https://www.cnrs.fr/fr/presse/cryptographie-sur-adn-une-nouvelle-approche-franco-japonaise-fait-ses-preuves)
+- Shannon, C. (1949). Communication Theory of Secrecy Systems
 
 ---
 
-> Projet réalisé à des fins éducatives. Aucune utilisation en production.
+> Built for educational purposes only. Not intended for production use.
