@@ -1,109 +1,195 @@
 # DNA-OTP
 
-Proof of concept of an encryption system inspired by synthetic DNA cryptography.
-
-Based on the Franco-Japanese research published by the CNRS in 2026 (Jaudou et al., HAL-05560338),
-which demonstrates that a synthetic DNA strand can serve as a One-Time Pad key -- the only encryption
-system proven mathematically unbreakable (Shannon, 1949).
-
-This project simulates the full pipeline in Python, without a lab.
+> Proof of concept of an encryption system inspired by synthetic DNA cryptography.
+> Based on Jaudou et al. (2026) HAL-05560338 CC BY 4.0
 
 ---
 
-## How it works
+## The problem : secure key distribution
 
-```
-"Secret message"
-      |
-   Binary bits (UTF-8)
-      |
-   DNA sequence (00->A, 01->T, 10->C, 11->G)
-      |
-   XOR with a cryptographically secure random DNA key
-      |
-   TGAGCACGATCAGG...  (ciphertext)
-```
+Every modern encryption system (AES, RSA...) relies on **computational security** : it is hard to break,
+but not impossible. Given enough computing power, any key can eventually be cracked.
 
-The DNA key is generated using `os.urandom()` -- the OS hardware entropy pool -- and used only once.
-This is the One-Time Pad principle. Without the key, the message is mathematically impossible to decrypt.
+The One-Time Pad (OTP), proven by Shannon in 1949, is the only system offering **unconditional security** :
+it is mathematically impossible to break, regardless of the attacker's computing power.
+
+The catch : the key must be as long as the message, perfectly random, and used only once.
+Distributing such keys securely over long distances has been the fundamental unsolved problem until now.
 
 ---
 
-## Why it is unbreakable
+## Shannon's proof
 
-### Shannon's proof (1949)
+A cryptosystem offers **perfect secrecy** if and only if :
 
-Shannon demonstrated that an encryption system is unconditionally secure if and only if three
-conditions are met:
+$$P(M = m \mid C = c) = P(M = m)$$
 
-1. **The key is as long as the message** -- no repetition is possible
-2. **The key is perfectly random** -- each base A/T/C/G has exactly a 25% probability of appearing
-3. **The key is used only once** -- one-time pad
+Observing the ciphertext $c$ gives zero information about the plaintext $m$.
+Shannon (1949) proved this holds if and only if three conditions are simultaneously met :
 
-When these three conditions are met, the ciphertext contains no information about the original message.
-It is not "very hard to break" -- it is mathematically proven impossible, regardless of the attacker's
-computing power.
+$$|K| \geq |M| \qquad H(K) = \log_2|K| \qquad K \text{ used only once}$$
 
-### What the demo shows
+Where :
+- $|K|$ is the key length, $|M|$ is the message length
+- $H(K) = -\sum_{k} P(k) \log_2 P(k)$ is the entropy of the key (Shannon entropy)
+- $H(K) = \log_2|K|$ means the key is **perfectly uniform** every possible key is equally likely
 
-```
-Possible key combinations for 56 bases : 4^56 ~ 5.19 x 10^33
-```
+For a DNA key of $n$ bases over alphabet $\{A, T, C, G\}$ :
 
-But brute force is not even the right attack vector. The real problem for an attacker is that any key
-produces a syntactically valid decryption. Without the real key, there is no way to identify the
-correct result among billions of false positives.
+$$H(K) = n \cdot \log_2 4 = 2n \text{ bits}$$
 
-### The role of DNA
+The number of possible keys is $4^n$. For $n = 56$ bases (a 14-character message) :
 
-In the CNRS method, the key is not a file -- it is a physical DNA strand. Only two copies exist: one
-held by the sender, one by the receiver. Any interception attempt leaves a detectable molecular trace
-via copy-number statistics (UMI tagging). This is what makes the key exchange itself unbreakable --
-the fundamental problem that software-based One-Time Pad does not solve.
+$$4^{56} \approx 5.19 \times 10^{33} \text{ possible keys}$$
+
+Brute force is not even the right attack. Every key produces a valid-looking decryption.
+Without the real key, there is no way to identify the correct plaintext.
 
 ---
 
-## 5PPD : Block-5 Purine Parity Digitization
+## The XOR operation
 
-The CNRS paper demonstrates that direct base encoding (00=A, 01=T...) is unsuitable for real synthetic
-DNA, because chemical synthesis introduces positional biases and short-range correlations between bases.
+Encryption and decryption both use the same operation : **bitwise XOR** ($\oplus$).
 
-The paper proposes 5PPD: for each block of 5 bases, count the number of purines (A or G) modulo 2.
-This produces one bit per block, averaging over positional biases and correlations.
+| $a$ | $b$ | $a \oplus b$ |
+|-----|-----|--------------|
+|  0  |  0  |      0       |
+|  0  |  1  |      1       |
+|  1  |  0  |      1       |
+|  1  |  1  |      0       |
+
+The key property : XOR is its own inverse.
+
+$$(M \oplus K) \oplus K = M$$
+
+So encryption and decryption are the same operation :
+
+$$C = M \oplus K \qquad M = C \oplus K$$
+
+Applied to DNA sequences, the XOR operates on the binary representations of each base.
+
+---
+
+## The pipeline
 
 ```
-DNA block : A C A T G
-Purines   : A . A . G  -> count = 3
-3 mod 2   : 1           -> bit = 1
+Alice                                          Bob
+  |                                              |
+  |   "Secret"  -->  01010011 01100101 ...       |
+  |                       |                      |
+  |              DNA encoding (2 bits/base)      |
+  |              00->A  01->T  10->C  11->G      |
+  |                       |                      |
+  |              TACCGTAC...  (message in DNA)   |
+  |                       |                      |
+  |   os.urandom()        |                      |
+  |   GCTAGTCA...  (key)  |                      |
+  |           \           |                      |
+  |            XOR (bitwise, base by base)       |
+  |                       |                      |
+  |              ATCGTGAC...  (ciphertext)        |
+  |                       |                      |
+  | -------- public channel ------------------>  |
+  |                       |                      |
+  |                  same key (shared)           |
+  |                       |                      |
+  |                  XOR again                   |
+  |                       |                      |
+  |              TACCGTAC...  (recovered DNA)     |
+  |                       |                      |
+  |              DNA decoding                    |
+  |                       |                      |
+  |              "Secret"  <--  01010011 ...      |
 ```
 
-This project implements 5PPD in `core/dna.py` and demonstrates it in `cli/demo_security.py`.
+---
+
+## Block-5 Purine Parity Digitization (5PPD)
+
+Direct base encoding (00=A, 01=T...) is sensitive to synthesis biases.
+During chemical DNA synthesis, bases are not incorporated with equal probability at every position.
+
+The CNRS paper introduces **5PPD** : for each block of 5 bases, count the number of purines
+($A$ or $G$) modulo 2. This produces one unbiased bit per block.
+
+$$b_i = \left( \sum_{j=1}^{5} \mathbb{1}[\text{base}_j \in \{A, G\}] \right) \mod 2$$
+
+Example :
+
+```
+DNA block :  A  C  A  T  G
+Purine?   :  1  0  1  0  1   -> sum = 3
+3 mod 2   :  1                -> bit = 1
+
+DNA block :  T  T  C  C  A
+Purine?   :  0  0  0  0  1   -> sum = 1
+1 mod 2   :  1                -> bit = 1
+
+DNA block :  G  C  T  A  C
+Purine?   :  1  0  0  1  0   -> sum = 2
+2 mod 2   :  0                -> bit = 0
+```
+
+Why does this work? Even if $A$ appears more often than $G$ at a given position,
+the parity of the count over a block of 5 averages out positional biases
+and short-range correlations along the polymer chain.
+
+The CNRS experiment measured a min-entropy of $H_{\min} \approx 0.96$ bits/bit after 5PPD,
+on par with NIST-approved cryptographic random number generators (FIPS 140-3).
+
+---
+
+## Key generation : os.urandom()
+
+This project uses `os.urandom()` to generate the DNA key.
+
+`os.urandom()` draws entropy from the OS hardware pool :
+- CPU timing jitter
+- Hardware interrupts
+- Thermal noise (on supported hardware)
+
+This is fundamentally different from `random.choice()`, which is a **deterministic PRNG**
+seeded from the system clock. A PRNG is not suitable for cryptography.
+
+```python
+# Wrong -- deterministic, predictable
+import random
+key = ''.join(random.choice('ATCG') for _ in range(n))
+
+# Right -- hardware entropy source
+import os
+raw = os.urandom(n_bytes)
+# each byte -> 4 bases (2 bits each)
+```
+
+The entropy of a key of $n$ bases generated by `os.urandom()` :
+
+$$H(K) \approx 2n \text{ bits} \qquad \text{(close to theoretical maximum)}$$
 
 ---
 
 ## Limitations
 
-This is a software simulation. Several components differ from the real CNRS protocol:
+This is a software simulation. Several components differ from the real CNRS protocol :
 
 **Key generation**
-The key is generated by `os.urandom()`, which draws from the OS hardware entropy pool (CPU timing,
-hardware interrupts). This is cryptographically suitable for software, but is not equivalent to the
-physical randomness of synthetic DNA synthesis (which arises from the stochastic incorporation of
-nucleotides during chemical reactions).
+`os.urandom()` draws from the OS hardware entropy pool. This is cryptographically suitable
+for software, but not equivalent to the physical randomness of synthetic DNA synthesis,
+which arises from the stochastic incorporation of nucleotides during chemical reactions.
 
 **Encoding**
-Message encoding uses direct binary mapping (00=A, 01=T, 10=C, 11=G). The CNRS paper shows this
-is biased for real DNA synthesis. 5PPD is implemented here for key binarization demonstration, but
-the full index-payload architecture of the paper is not replicated.
+Message encoding uses direct binary mapping (00=A, 01=T, 10=C, 11=G).
+The CNRS paper shows this is biased for real DNA synthesis.
+5PPD is implemented here for key binarization demonstration.
 
 **No index-payload architecture**
-The real protocol uses paired index and payload DNA strands. Alice and Bob publicly exchange indices
-to synchronize, while keeping payloads secret. This sifting stage (analogous to QKD) is not
-implemented here.
+The real protocol uses paired index and payload DNA strands.
+Alice and Bob publicly exchange indices to synchronize, while keeping payloads secret.
+This sifting stage (analogous to QKD) is not implemented here.
 
 **No interception detection**
-The paper demonstrates that attacks can be detected via Unique Molecular Identifier (UMI) statistics.
-This requires physical DNA samples and nanopore sequencing -- not replicable in software.
+The paper demonstrates that attacks can be detected via Unique Molecular Identifier (UMI)
+statistics. This requires physical DNA samples and nanopore sequencing.
 
 ---
 
@@ -112,7 +198,7 @@ This requires physical DNA samples and nanopore sequencing -- not replicable in 
 ```
 dna_otp/
 |-- core/
-|   |-- dna.py              # Core logic: encoding, XOR, 5PPD, encryption
+|   |-- dna.py              # Core logic : encoding, XOR, 5PPD, encryption
 |-- cli/
 |   |-- main.py             # Encryption and decryption tool
 |   |-- visualize.py        # Step-by-step pipeline walkthrough
@@ -148,9 +234,9 @@ python cli/demo_security.py "Secret message"
 
 ## References
 
-- CNRS. (2026). Synchronized DNA sources for unconditionally secure cryptography.
-  HAL-05560338. https://hal.science/hal-05560338v1
-- Shannon, C. (1949). Communication Theory of Secrecy Systems. Bell System Technical Journal.
+- Jaudou et al. (2026). *Synchronized DNA sources for unconditionally secure cryptography.*
+  HAL-05560338. https://hal.science/hal-05560338v1 CC BY 4.0
+- Shannon, C. (1949). *Communication Theory of Secrecy Systems.* Bell System Technical Journal, 28(4), 656-715.
 
 ---
 
