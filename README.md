@@ -198,6 +198,7 @@ statistics. This requires physical DNA samples and nanopore sequencing.
 ```
 dna_otp/
 |-- core/
+|   |-- __init__.py         # Core package
 |   |-- dna.py              # Core logic : encoding, XOR, 5PPD, encryption
 |-- cli/
 |   |-- main.py             # Encryption and decryption tool
