@@ -11,6 +11,7 @@ from core.dna import (
     encode_dna,
     decode_dna,
     generate_key,
+    xor_bits,
     xor_sequences,
     encrypt,
     decrypt,
@@ -92,28 +93,44 @@ class TestKeyGeneration:
 
 class TestXOR:
 
-    def test_xor_identity(self):
+    def test_xor_bits_identity(self):
+        assert xor_bits("1010", "0000") == "1010"
+
+    def test_xor_bits_self_is_zero(self):
+        assert xor_bits("1010", "1010") == "0000"
+
+    def test_xor_bits_known_value(self):
+        assert xor_bits("1100", "1010") == "0110"
+
+    def test_xor_bits_unequal_length_raises(self):
+        with pytest.raises(ValueError, match="equal length"):
+            xor_bits("1010", "10")
+
+    def test_xor_sequences_identity(self):
         seq = "ATCG"
         key = "AAAA"
         assert xor_sequences(xor_sequences(seq, key), key) == seq
 
-    def test_xor_self_is_zero(self):
+    def test_xor_sequences_self_is_zero(self):
         seq = "GCTA"
-        result = xor_sequences(seq, seq)
-        assert result == "AAAA"
+        assert xor_sequences(seq, seq) == "AAAA"
 
-    def test_xor_commutativity(self):
+    def test_xor_sequences_commutativity(self):
         a = "ATCG"
         b = "GCTA"
         assert xor_sequences(a, b) == xor_sequences(b, a)
+
+    def test_xor_sequences_unequal_length_raises(self):
+        with pytest.raises(ValueError, match="equal length"):
+            xor_sequences("ATCG", "AT")
 
 # ── Encrypt / Decrypt ──────────────────────────────────────
 
 class TestEncryptDecrypt:
 
-    def test_encrypt_decrypt_roundtrip(self):
+    def test_encrypt_decrypt_ascii(self):
         message = "Secret"
-        key = generate_key(len(message) * 4)
+        key = generate_key(len(message.encode('utf-8')) * 4)
         assert decrypt(encrypt(message, key), key) == message
 
     def test_encrypt_decrypt_single_char(self):
@@ -122,32 +139,31 @@ class TestEncryptDecrypt:
         assert decrypt(encrypt(message, key), key) == message
 
     def test_encrypt_decrypt_utf8_accents(self):
-        message = "cafe"
+        message = "éàü"
         key = generate_key(len(message.encode('utf-8')) * 4)
         assert decrypt(encrypt(message, key), key) == message
 
     def test_encrypt_decrypt_utf8_cjk(self):
-        message = "hello"
+        message = "日本語"
         key = generate_key(len(message.encode('utf-8')) * 4)
         assert decrypt(encrypt(message, key), key) == message
 
     def test_encrypt_decrypt_emoji(self):
-        message = "hi!"
+        message = "🔑"
         key = generate_key(len(message.encode('utf-8')) * 4)
         assert decrypt(encrypt(message, key), key) == message
 
     def test_encrypt_changes_message(self):
         message = "Secret"
-        key = generate_key(len(message) * 4)
+        key = generate_key(len(message.encode('utf-8')) * 4)
         ciphertext = encrypt(message, key)
-        from core.dna import encode_dna, text_to_bits
         dna_message = encode_dna(text_to_bits(message))
         assert ciphertext != dna_message
 
     def test_wrong_key_fails(self):
         message = "Secret"
-        key = generate_key(len(message) * 4)
-        wrong_key = generate_key(len(message) * 4)
+        key = generate_key(len(message.encode('utf-8')) * 4)
+        wrong_key = generate_key(len(message.encode('utf-8')) * 4)
         ciphertext = encrypt(message, key)
         # With a wrong key, decryption either raises (invalid UTF-8 bytes)
         # or produces a different plaintext. Both outcomes are valid --
@@ -166,7 +182,7 @@ class TestEncryptDecrypt:
 
     def test_decrypt_key_too_short_raises(self):
         message = "Hi"
-        key = generate_key(len(message) * 4)
+        key = generate_key(len(message.encode('utf-8')) * 4)
         ciphertext = encrypt(message, key)
         with pytest.raises(ValueError, match="at least as long"):
             decrypt(ciphertext, "AT")
