@@ -1,7 +1,7 @@
 # DNA-OTP
 
 > Proof of concept of an encryption system inspired by synthetic DNA cryptography.
-> Based on Jaudou et al. (2026) HAL-05560338 CC BY 4.0
+> Based on CNRS (2026) HAL-05560338 CC BY 4.0
 
 ---
 
@@ -87,7 +87,7 @@ Alice                                          Bob
   |           \           |                      |
   |            XOR (bitwise, base by base)       |
   |                       |                      |
-  |              ATCGTGAC...  (ciphertext)        |
+  |              ATCGTGAC...  (ciphertext)       |
   |                       |                      |
   | -------- public channel ------------------>  |
   |                       |                      |
@@ -95,11 +95,11 @@ Alice                                          Bob
   |                       |                      |
   |                  XOR again                   |
   |                       |                      |
-  |              TACCGTAC...  (recovered DNA)     |
+  |              TACCGTAC...  (recovered DNA)    |
   |                       |                      |
   |              DNA decoding                    |
   |                       |                      |
-  |              "Secret"  <--  01010011 ...      |
+  |              "Secret"  <--  01010011 ...     |
 ```
 
 ---
@@ -234,7 +234,7 @@ python cli/demo_security.py "Secret message"
 
 ## References
 
-- Jaudou et al. (2026). *Synchronized DNA sources for unconditionally secure cryptography.*
+- CNRS (2026). *Synchronized DNA sources for unconditionally secure cryptography.*
   HAL-05560338. https://hal.science/hal-05560338v1 CC BY 4.0
 - Shannon, C. (1949). *Communication Theory of Secrecy Systems.* Bell System Technical Journal, 28(4), 656-715.
 
