@@ -53,6 +53,14 @@ class TestEncoding:
         assert decode_dna("C") == "10"
         assert decode_dna("G") == "11"
 
+    def test_decode_dna_raises_on_invalid_base(self):
+        with pytest.raises(ValueError, match="Invalid DNA base"):
+            decode_dna("X")
+
+    def test_decode_dna_raises_on_lowercase(self):
+        with pytest.raises(ValueError, match="Invalid DNA base"):
+            decode_dna("atcg")
+
     def test_encode_decode_roundtrip(self):
         bits = "0011001011010000"
         assert decode_dna(encode_dna(bits)) == bits
@@ -113,9 +121,19 @@ class TestEncryptDecrypt:
         key = generate_key(100)
         assert decrypt(encrypt(message, key), key) == message
 
-    def test_encrypt_decrypt_unicode(self):
+    def test_encrypt_decrypt_utf8_accents(self):
         message = "cafe"
-        key = generate_key(len(message) * 4)
+        key = generate_key(len(message.encode('utf-8')) * 4)
+        assert decrypt(encrypt(message, key), key) == message
+
+    def test_encrypt_decrypt_utf8_cjk(self):
+        message = "hello"
+        key = generate_key(len(message.encode('utf-8')) * 4)
+        assert decrypt(encrypt(message, key), key) == message
+
+    def test_encrypt_decrypt_emoji(self):
+        message = "hi!"
+        key = generate_key(len(message.encode('utf-8')) * 4)
         assert decrypt(encrypt(message, key), key) == message
 
     def test_encrypt_changes_message(self):

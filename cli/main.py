@@ -20,10 +20,17 @@ def cmd_encrypt(args):
 
     with open("key.dna", "w") as f:
         f.write(key)
+    # Restrict key file to owner read/write only (Unix)
+    # Silently ignored on Windows where os.chmod has no effect on read access
+    try:
+        os.chmod("key.dna", 0o600)
+    except AttributeError:
+        pass
+
     with open("cipher.dna", "w") as f:
         f.write(ciphertext)
 
-    print("  Key saved to key.dna")
+    print("  Key saved to key.dna (permissions: 600 on Unix)")
     print("  Ciphertext saved to cipher.dna")
     print("\n  WARNING: key.dna must be shared securely and deleted after use.")
     print("  Reusing the same key breaks OTP security.\n")

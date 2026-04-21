@@ -31,7 +31,14 @@ def encode_dna(bits: str) -> str:
     return ''.join(BIN_TO_DNA[bits[i:i+2]] for i in range(0, len(bits), 2))
 
 def decode_dna(sequence: str) -> str:
-    """Decode a DNA sequence back into a bit string."""
+    """
+    Decode a DNA sequence back into a bit string.
+    Raises ValueError on invalid bases instead of a raw KeyError.
+    """
+    valid = set(DNA_TO_BIN.keys())
+    for base in sequence:
+        if base not in valid:
+            raise ValueError(f"Invalid DNA base '{base}'. Expected one of {sorted(valid)}.")
     return ''.join(DNA_TO_BIN[base] for base in sequence)
 
 def generate_key(length_bases: int) -> str:
@@ -95,10 +102,7 @@ def xor_sequences(seq1: str, seq2: str) -> str:
     return encode_dna(xored)
 
 def encrypt(message: str, key: str) -> str:
-    """
-    Encrypt a message using a DNA key (OTP).
-    The key file is deleted after encryption to enforce one-time use.
-    """
+    """Encrypt a message using a DNA key (OTP)."""
     bits = text_to_bits(message)
     # text_to_bits always returns a multiple of 8 bits -- safe to encode directly
     dna_message = encode_dna(bits)
@@ -115,5 +119,4 @@ def decrypt(ciphertext: str, key: str) -> str:
         raise ValueError("Key must be at least as long as the ciphertext.")
     decrypted_dna = xor_sequences(ciphertext, key[:len(ciphertext)])
     bits = decode_dna(decrypted_dna)
-    # bits_to_text now raises explicitly instead of truncating silently
     return bits_to_text(bits)
