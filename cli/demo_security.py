@@ -42,7 +42,14 @@ def demo(message: str):
     print(f"  Ideal distribution : 25% per base")
 
     # 3. 5PPD demonstration
+    # Note: pedagogical demonstration only.
+    # The key here comes from os.urandom() and has no synthesis bias.
+    # 5PPD is only meaningful for physically synthesized DNA sequences,
+    # where chemical processes introduce positional biases and correlations.
     section("3 : Block-5 Purine Parity Digitization (5PPD)")
+    print(f"  Note: pedagogical demonstration of the CNRS method.")
+    print(f"  5PPD corrects synthesis biases in physical DNA -- not applicable")
+    print(f"  to os.urandom() keys which are already uniformly distributed.\n")
     sample_seq = generate_key(50)
     print(f"  Sample DNA sequence : {sample_seq}")
     print(f"\n  Purines = A or G, Pyrimidines = C or T")
@@ -55,9 +62,9 @@ def demo(message: str):
     bits_5ppd = purine_parity_digitize(sample_seq)
     print(f"\n  5PPD output : {bits_5ppd}")
     print(f"  Entropy of 5PPD bits : {entropy(bits_5ppd):.4f} bits/symbol")
-    print(f"\n  Why 5PPD? Direct encoding (00=A, 01=T...) is sensitive to")
-    print(f"  synthesis biases. 5PPD averages over positional biases and")
-    print(f"  short-range correlations -- as used in the CNRS paper.")
+    print(f"\n  In real DNA synthesis, this removes positional biases and")
+    print(f"  short-range correlations along the polymer chain.")
+    print(f"  The CNRS experiment measured H_min ~ 0.96 bits/bit after 5PPD.")
 
     # 4. Ciphertext reveals nothing
     section("4 : The ciphertext reveals nothing about the message")
@@ -82,13 +89,23 @@ def demo(message: str):
     wrong_key = generate_key(len(key))
     try:
         wrong_decrypt = decrypt(ciphertext, wrong_key)
-        print(f"  Result : \"{wrong_decrypt[:30]}...\"")
-    except UnicodeDecodeError:
+        # Safely truncate and encode before printing to avoid terminal encoding errors
+        safe_output = wrong_decrypt[:30].encode('ascii', errors='replace').decode('ascii')
+        print(f"  Result : \"{safe_output}...\"")
+    except (UnicodeDecodeError, ValueError):
         print(f"  Result : [unreadable sequence, invalid bytes]")
     print(f"\n  With the wrong key, the output is pure noise")
     print(f"  Any key produces a syntactically plausible decryption")
     print(f"  Without the real key, there is no way to identify the correct result")
     print(f"  This is Shannon's proof (1949) : unconditional security")
+
+    # 6. What OTP does NOT guarantee
+    section("6 : What OTP does NOT guarantee")
+    print(f"  OTP provides confidentiality, not integrity.")
+    print(f"  An attacker who flips bits in the ciphertext in transit")
+    print(f"  produces a different plaintext -- undetected by the receiver.")
+    print(f"  In physical DNA-OTP, UMI tagging detects such interference.")
+    print(f"  In this software simulation, there is no integrity check.")
 
     print(f"\n{'='*55}\n")
 

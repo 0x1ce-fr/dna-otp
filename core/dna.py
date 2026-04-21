@@ -47,6 +47,9 @@ def generate_key(length_bases: int) -> str:
         00 -> A, 01 -> T, 10 -> C, 11 -> G
     """
     bases = []
+    # ceil(length_bases / 4) bytes -- each byte yields exactly 4 bases (4 x 2 bits)
+    # e.g. length_bases=5 -> n_bytes=2 -> 8 bases generated, 5 kept
+    # The 3 discarded bases are unused entropy -- not a bug, just byte-boundary rounding
     n_bytes = (length_bases + 3) // 4
     raw = os.urandom(n_bytes)
     for byte in raw:

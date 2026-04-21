@@ -191,6 +191,13 @@ This sifting stage (analogous to QKD) is not implemented here.
 The paper demonstrates that attacks can be detected via Unique Molecular Identifier (UMI)
 statistics. This requires physical DNA samples and nanopore sequencing.
 
+**No integrity guarantee**
+OTP provides confidentiality, not integrity. An attacker who modifies the ciphertext
+in transit produces a different plaintext without the receiver being able to detect it.
+In physical DNA-OTP, UMI copy-number statistics provide this layer of security.
+In this software simulation, there is no integrity check.
+
+
 ---
 
 ## Structure

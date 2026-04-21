@@ -131,6 +131,11 @@ class TestEncryptDecrypt:
         key = generate_key(len(message) * 4)
         wrong_key = generate_key(len(message) * 4)
         ciphertext = encrypt(message, key)
+        # With a wrong key, decryption either raises (invalid UTF-8 bytes)
+        # or produces a different plaintext. Both outcomes are valid --
+        # the point is that the correct plaintext cannot be recovered.
+        # Note: the probability that a random wrong key accidentally
+        # produces the correct plaintext is 1/4^n -- negligible in practice.
         try:
             result = decrypt(ciphertext, wrong_key)
             assert result != message
