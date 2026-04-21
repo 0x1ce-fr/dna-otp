@@ -1,7 +1,9 @@
 # DNA-OTP
 
 > Proof of concept of an encryption system inspired by synthetic DNA cryptography.
-> Based on CNRS (2026) HAL-05560338 CC BY 4.0
+> Based on CNRS. (2026) HAL-05560338 CC BY 4.0
+
+![tests](https://github.com/0x1ce-fr/dna-otp/actions/workflows/tests.yml/badge.svg)
 
 ---
 
@@ -201,8 +203,12 @@ dna_otp/
 |   |-- dna.py              # Core logic : encoding, XOR, 5PPD, encryption
 |-- cli/
 |   |-- main.py             # Encryption and decryption tool
-|   |-- visualize.py        # Step-by-step pipeline walkthrough
 |   |-- demo_security.py    # Unbreakability and 5PPD demonstration
+|-- tests/
+|   |-- test_dna.py         # Unit tests (26 tests)
+|-- .github/
+|   |-- workflows/
+|       |-- tests.yml       # GitHub Actions CI
 |-- README.md
 ```
 
@@ -220,21 +226,21 @@ python cli/main.py encrypt "Secret message"
 python cli/main.py decrypt
 ```
 
-**Visualize the pipeline step by step**
-```bash
-python cli/visualize.py "Secret message"
-```
-
 **Demonstrate unbreakability and 5PPD**
 ```bash
 python cli/demo_security.py "Secret message"
+```
+
+**Run tests**
+```bash
+pytest tests/ -v
 ```
 
 ---
 
 ## References
 
-- CNRS (2026). *Synchronized DNA sources for unconditionally secure cryptography.*
+- CNRS. (2026). *Synchronized DNA sources for unconditionally secure cryptography.*
   HAL-05560338. https://hal.science/hal-05560338v1 CC BY 4.0
 - Shannon, C. (1949). *Communication Theory of Secrecy Systems.* Bell System Technical Journal, 28(4), 656-715.
 
