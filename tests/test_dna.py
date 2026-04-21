@@ -33,11 +33,19 @@ class TestEncoding:
         original = "Hello"
         assert bits_to_text(text_to_bits(original)) == original
 
+    def test_bits_to_text_raises_on_non_multiple_of_8(self):
+        with pytest.raises(ValueError, match="not a multiple of 8"):
+            bits_to_text("010")
+
     def test_encode_dna_mapping(self):
         assert encode_dna("00") == "A"
         assert encode_dna("01") == "T"
         assert encode_dna("10") == "C"
         assert encode_dna("11") == "G"
+
+    def test_encode_dna_raises_on_odd_bits(self):
+        with pytest.raises(ValueError, match="not a multiple of 2"):
+            encode_dna("0")
 
     def test_decode_dna_mapping(self):
         assert decode_dna("A") == "00"
@@ -46,12 +54,8 @@ class TestEncoding:
         assert decode_dna("G") == "11"
 
     def test_encode_decode_roundtrip(self):
-        bits = "0011001011010001"
+        bits = "0011001011010000"
         assert decode_dna(encode_dna(bits)) == bits
-
-    def test_encode_dna_odd_bits_padding(self):
-        result = encode_dna("0")
-        assert result in ["A", "T", "C", "G"]
 
 # ── Key generation ─────────────────────────────────────────
 
@@ -104,7 +108,7 @@ class TestEncryptDecrypt:
         key = generate_key(len(message) * 4)
         assert decrypt(encrypt(message, key), key) == message
 
-    def test_encrypt_decrypt_empty(self):
+    def test_encrypt_decrypt_single_char(self):
         message = "A"
         key = generate_key(100)
         assert decrypt(encrypt(message, key), key) == message
@@ -118,6 +122,7 @@ class TestEncryptDecrypt:
         message = "Secret"
         key = generate_key(len(message) * 4)
         ciphertext = encrypt(message, key)
+        from core.dna import encode_dna, text_to_bits
         dna_message = encode_dna(text_to_bits(message))
         assert ciphertext != dna_message
 
@@ -129,12 +134,19 @@ class TestEncryptDecrypt:
         try:
             result = decrypt(ciphertext, wrong_key)
             assert result != message
-        except (UnicodeDecodeError, AssertionError):
+        except (UnicodeDecodeError, ValueError):
             pass
 
     def test_key_too_short_raises(self):
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError, match="at least as long"):
             encrypt("Hello world", "AT")
+
+    def test_decrypt_key_too_short_raises(self):
+        message = "Hi"
+        key = generate_key(len(message) * 4)
+        ciphertext = encrypt(message, key)
+        with pytest.raises(ValueError, match="at least as long"):
+            decrypt(ciphertext, "AT")
 
 # ── 5PPD ───────────────────────────────────────────────────
 
