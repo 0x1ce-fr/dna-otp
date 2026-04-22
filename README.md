@@ -211,10 +211,11 @@ dna_otp/
 |   |-- main.py             # Encryption and decryption tool
 |   |-- demo_security.py    # Unbreakability and 5PPD demonstration
 |-- tests/
-|   |-- test_dna.py         # Unit tests (26 tests)
+|   |-- test_dna.py         # Unit tests (39 tests)
 |-- .github/
 |   |-- workflows/
 |       |-- tests.yml       # GitHub Actions CI
+|-- pyproject.toml          # Package configuration
 |-- README.md
 ```
 
