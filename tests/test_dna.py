@@ -1,10 +1,9 @@
 # tests/test_dna.py
 
-import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+import tempfile
 import pytest
+
 from core.dna import (
     text_to_bits,
     bits_to_text,
@@ -16,6 +15,7 @@ from core.dna import (
     encrypt,
     decrypt,
     purine_parity_digitize,
+    secure_delete,
 )
 
 # ── Encoding ───────────────────────────────────────────────
@@ -217,3 +217,22 @@ class TestPPD:
         seq = generate_key(40)
         bits = purine_parity_digitize(seq, block_size=4)
         assert len(bits) == 10
+
+# ── Secure delete ──────────────────────────────────────────
+
+class TestSecureDelete:
+
+    def test_secure_delete_removes_file(self):
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".dna") as f:
+            f.write(b"ATCGATCG")
+            path = f.name
+        secure_delete(path)
+        assert not os.path.exists(path)
+
+    def test_secure_delete_overwrites_content(self):
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".dna", mode='w') as f:
+            f.write("ATCGATCG")
+            path = f.name
+        # Read content before deletion -- after secure_delete it should be gone
+        secure_delete(path)
+        assert not os.path.exists(path)

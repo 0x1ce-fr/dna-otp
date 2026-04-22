@@ -4,12 +4,11 @@ import argparse
 import sys
 import os
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.dna import generate_key, encrypt, decrypt, secure_delete
 
-from core.dna import generate_key, encrypt, decrypt
 
-def cmd_encrypt(args):
-    key = generate_key(len(args.message) * 4)
+def cmd_encrypt(args: argparse.Namespace) -> None:
+    key = generate_key(len(args.message.encode('utf-8')) * 4)
     ciphertext = encrypt(args.message, key)
 
     print(f"\n{'='*50}")
@@ -35,7 +34,8 @@ def cmd_encrypt(args):
     print("\n  WARNING: key.dna must be shared securely and deleted after use.")
     print("  Reusing the same key breaks OTP security.\n")
 
-def cmd_decrypt(args):
+
+def cmd_decrypt(args: argparse.Namespace) -> None:
     if not os.path.exists("key.dna"):
         print("\n  ERROR: key.dna not found. Has the key already been used?\n")
         sys.exit(1)
@@ -58,11 +58,13 @@ def cmd_decrypt(args):
     print(f"  Decrypted message : {message}")
     print(f"{'='*50}\n")
 
-    # Enforce one-time use: delete the key after decryption
-    os.remove("key.dna")
-    print("  key.dna deleted -- OTP enforced, this key cannot be reused.\n")
+    # Enforce one-time use: securely overwrite then delete the key
+    # os.remove() alone leaves data recoverable on disk
+    secure_delete("key.dna")
+    print("  key.dna securely deleted -- OTP enforced, this key cannot be reused.\n")
 
-def main():
+
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="DNA-OTP: encryption using synthetic DNA sequences"
     )
@@ -81,6 +83,7 @@ def main():
         cmd_decrypt(args)
     else:
         parser.print_help()
+
 
 if __name__ == "__main__":
     main()

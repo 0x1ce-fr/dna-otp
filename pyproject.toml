@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dna-otp"
+version = "0.1.0"
+description = "OTP encryption over synthetic DNA sequences"
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+dev = ["pytest", "mypy"]
+
+[project.scripts]
+dna-encrypt = "cli.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["core*", "cli*"]
+
+[tool.mypy]
+strict = false
+ignore_missing_imports = true
+check_untyped_defs = true

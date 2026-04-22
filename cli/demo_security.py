@@ -5,14 +5,18 @@ import os
 import math
 from collections import Counter
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.dna import (
+    generate_key, encrypt, decrypt,
+    encode_dna, text_to_bits, decode_dna, encode_dna,
+    purine_parity_digitize,
+)
 
-from core.dna import generate_key, encrypt, decrypt, encode_dna, text_to_bits, purine_parity_digitize
 
-def section(title):
+def section(title: str) -> None:
     print(f"\n{'='*55}")
     print(f"  {title}")
     print(f"{'='*55}")
+
 
 def entropy(sequence: str) -> float:
     """Compute Shannon entropy of a sequence (bits per symbol)."""
@@ -20,11 +24,18 @@ def entropy(sequence: str) -> float:
     counts = Counter(sequence)
     return -sum((c/n) * math.log2(c/n) for c in counts.values())
 
-def demo(message: str):
+
+def flip_base(base: str) -> str:
+    """Flip a DNA base to a different one -- simulates a bit flip attack."""
+    cycle = {'A': 'T', 'T': 'C', 'C': 'G', 'G': 'A'}
+    return cycle[base]
+
+
+def demo(message: str) -> None:
 
     # 1. Key entropy
     section("1 : DNA key entropy (os.urandom)")
-    key = generate_key(len(message) * 4)
+    key = generate_key(len(message.encode('utf-8')) * 4)
     h = entropy(key)
     print(f"  Generated key : {key[:40]}...")
     print(f"  Entropy       : {h:.4f} bits/base (theoretical max = 2.0)")
@@ -44,8 +55,7 @@ def demo(message: str):
     # 3. 5PPD demonstration
     # Note: pedagogical demonstration only.
     # The key here comes from os.urandom() and has no synthesis bias.
-    # 5PPD is only meaningful for physically synthesized DNA sequences,
-    # where chemical processes introduce positional biases and correlations.
+    # 5PPD is only meaningful for physically synthesized DNA sequences.
     section("3 : Block-5 Purine Parity Digitization (5PPD)")
     print(f"  Note: pedagogical demonstration of the CNRS method.")
     print(f"  5PPD corrects synthesis biases in physical DNA -- not applicable")
@@ -89,7 +99,6 @@ def demo(message: str):
     wrong_key = generate_key(len(key))
     try:
         wrong_decrypt = decrypt(ciphertext, wrong_key)
-        # Safely truncate and encode before printing to avoid terminal encoding errors
         safe_output = wrong_decrypt[:30].encode('ascii', errors='replace').decode('ascii')
         print(f"  Result : \"{safe_output}...\"")
     except (UnicodeDecodeError, ValueError):
@@ -99,15 +108,31 @@ def demo(message: str):
     print(f"  Without the real key, there is no way to identify the correct result")
     print(f"  This is Shannon's proof (1949) : unconditional security")
 
-    # 6. What OTP does NOT guarantee
-    section("6 : What OTP does NOT guarantee")
-    print(f"  OTP provides confidentiality, not integrity.")
-    print(f"  An attacker who flips bits in the ciphertext in transit")
-    print(f"  produces a different plaintext -- undetected by the receiver.")
-    print(f"  In physical DNA-OTP, UMI tagging detects such interference.")
-    print(f"  In this software simulation, there is no integrity check.")
+    # 6. OTP does NOT guarantee integrity -- concrete attack demo
+    section("6 : OTP has no integrity guarantee -- bit flip attack")
+    print(f"  OTP guarantees confidentiality, not integrity.")
+    print(f"  An attacker who flips a bit in the ciphertext in transit")
+    print(f"  produces a corrupted plaintext -- with no error raised.\n")
+    print(f"  Original ciphertext : {ciphertext[:20]}...")
+
+    # Flip the first base of the ciphertext
+    tampered = flip_base(ciphertext[0]) + ciphertext[1:]
+    print(f"  Tampered ciphertext : {tampered[:20]}...")
+    print(f"  (first base flipped : {ciphertext[0]} -> {tampered[0]})\n")
+
+    try:
+        tampered_decrypt = decrypt(tampered, key)
+        print(f"  Decrypted tampered  : \"{tampered_decrypt}\"")
+        print(f"  Original message    : \"{message}\"")
+        print(f"\n  The receiver gets a wrong message with no warning.")
+    except (UnicodeDecodeError, ValueError):
+        print(f"  Decrypted tampered  : [invalid UTF-8 -- corruption detected by chance]")
+
+    print(f"\n  In physical DNA-OTP, UMI copy-number statistics detect this.")
+    print(f"  In software OTP, an HMAC layer would be required.")
 
     print(f"\n{'='*55}\n")
+
 
 if __name__ == "__main__":
     msg = sys.argv[1] if len(sys.argv) > 1 else "Secret message"

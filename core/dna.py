@@ -3,31 +3,41 @@
 import os
 
 # Direct binary to DNA mapping (used for message encoding only)
-BIN_TO_DNA = {'00': 'A', '01': 'T', '10': 'C', '11': 'G'}
-DNA_TO_BIN = {v: k for k, v in BIN_TO_DNA.items()}
+BIN_TO_DNA: dict[str, str] = {'00': 'A', '01': 'T', '10': 'C', '11': 'G'}
+DNA_TO_BIN: dict[str, str] = {v: k for k, v in BIN_TO_DNA.items()}
 
 # Purines (A, G) vs Pyrimidines (C, T) -- used for 5PPD
-PURINES = {'A', 'G'}
+PURINES: frozenset[str] = frozenset({'A', 'G'})
+
 
 def text_to_bits(text: str) -> str:
     """Convert a text string into a binary bit string."""
     return ''.join(f'{byte:08b}' for byte in text.encode('utf-8'))
 
+
 def bits_to_text(bits: str) -> str:
-    """Convert a binary bit string back into a text string."""
+    """
+    Convert a binary bit string back into a text string.
+    Raises ValueError if length is not a multiple of 8.
+    """
     if len(bits) % 8 != 0:
-        raise ValueError(f"Bit string length {len(bits)} is not a multiple of 8. Decryption may have used the wrong key.")
+        raise ValueError(
+            f"Bit string length {len(bits)} is not a multiple of 8. "
+            "Decryption may have used the wrong key."
+        )
     chars = [bits[i:i+8] for i in range(0, len(bits), 8)]
     return bytes(int(c, 2) for c in chars).decode('utf-8')
+
 
 def encode_dna(bits: str) -> str:
     """
     Encode a bit string into a DNA sequence (2 bits per base).
-    Raises if the bit string length is not a multiple of 2 -- no silent padding.
+    Raises ValueError if length is not a multiple of 2 -- no silent padding.
     """
     if len(bits) % 2 != 0:
         raise ValueError(f"Bit string length {len(bits)} is not a multiple of 2.")
     return ''.join(BIN_TO_DNA[bits[i:i+2]] for i in range(0, len(bits), 2))
+
 
 def decode_dna(sequence: str) -> str:
     """
@@ -37,8 +47,11 @@ def decode_dna(sequence: str) -> str:
     valid = set(DNA_TO_BIN.keys())
     for base in sequence:
         if base not in valid:
-            raise ValueError(f"Invalid DNA base '{base}'. Expected one of {sorted(valid)}.")
+            raise ValueError(
+                f"Invalid DNA base '{base}'. Expected one of {sorted(valid)}."
+            )
     return ''.join(DNA_TO_BIN[base] for base in sequence)
+
 
 def generate_key(length_bases: int) -> str:
     """
@@ -52,10 +65,10 @@ def generate_key(length_bases: int) -> str:
     Each pair of random bits maps to one DNA base:
         00 -> A, 01 -> T, 10 -> C, 11 -> G
     """
-    bases = []
+    bases: list[str] = []
     # ceil(length_bases / 4) bytes -- each byte yields exactly 4 bases (4 x 2 bits)
     # e.g. length_bases=5 -> n_bytes=2 -> 8 bases generated, 5 kept
-    # The 3 discarded bases are unused entropy -- not a bug, just byte-boundary rounding
+    # The discarded bases are unused entropy -- not a bug, just byte-boundary rounding
     n_bytes = (length_bases + 3) // 4
     raw = os.urandom(n_bytes)
     for byte in raw:
@@ -63,6 +76,7 @@ def generate_key(length_bases: int) -> str:
             two_bits = (byte >> shift) & 0b11
             bases.append(['A', 'T', 'C', 'G'][two_bits])
     return ''.join(bases[:length_bases])
+
 
 def purine_parity_digitize(sequence: str, block_size: int = 5) -> str:
     """
@@ -82,12 +96,13 @@ def purine_parity_digitize(sequence: str, block_size: int = 5) -> str:
     and has no synthesis bias. 5PPD is implemented here for pedagogical
     demonstration of the CNRS method only.
     """
-    bits = []
+    bits: list[str] = []
     for i in range(0, len(sequence) - block_size + 1, block_size):
         block = sequence[i:i + block_size]
         purine_count = sum(1 for base in block if base in PURINES)
         bits.append(str(purine_count % 2))
     return ''.join(bits)
+
 
 def xor_bits(b1: str, b2: str) -> str:
     """
@@ -95,8 +110,11 @@ def xor_bits(b1: str, b2: str) -> str:
     Uses integer XOR for performance -- ~114x faster than character iteration.
     """
     if len(b1) != len(b2):
-        raise ValueError(f"Bit strings must have equal length ({len(b1)} vs {len(b2)}).")
+        raise ValueError(
+            f"Bit strings must have equal length ({len(b1)} vs {len(b2)})."
+        )
     return bin(int(b1, 2) ^ int(b2, 2))[2:].zfill(len(b1))
+
 
 def xor_sequences(seq1: str, seq2: str) -> str:
     """
@@ -104,11 +122,14 @@ def xor_sequences(seq1: str, seq2: str) -> str:
     Raises if sequences have different lengths.
     """
     if len(seq1) != len(seq2):
-        raise ValueError(f"DNA sequences must have equal length ({len(seq1)} vs {len(seq2)}).")
+        raise ValueError(
+            f"DNA sequences must have equal length ({len(seq1)} vs {len(seq2)})."
+        )
     bits1 = decode_dna(seq1)
     bits2 = decode_dna(seq2)
     xored = xor_bits(bits1, bits2)
     return encode_dna(xored)
+
 
 def encrypt(message: str, key: str) -> str:
     """Encrypt a message using a DNA key (OTP)."""
@@ -118,6 +139,7 @@ def encrypt(message: str, key: str) -> str:
     if len(key) < len(dna_message):
         raise ValueError("Key must be at least as long as the message.")
     return xor_sequences(dna_message, key[:len(dna_message)])
+
 
 def decrypt(ciphertext: str, key: str) -> str:
     """
@@ -129,3 +151,18 @@ def decrypt(ciphertext: str, key: str) -> str:
     decrypted_dna = xor_sequences(ciphertext, key[:len(ciphertext)])
     bits = decode_dna(decrypted_dna)
     return bits_to_text(bits)
+
+
+def secure_delete(path: str) -> None:
+    """
+    Securely delete a file by overwriting its contents with random bytes
+    before unlinking. os.remove() alone leaves data recoverable on disk.
+    """
+    try:
+        size = os.path.getsize(path)
+        with open(path, 'wb') as f:
+            f.write(os.urandom(size))
+    except OSError:
+        pass
+    finally:
+        os.remove(path)
