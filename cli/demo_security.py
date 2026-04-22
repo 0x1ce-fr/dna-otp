@@ -1,13 +1,15 @@
 # cli/demo_security.py
 
 import sys
-import os
 import math
 from collections import Counter
 
 from core.dna import (
-    generate_key, encrypt, decrypt,
-    encode_dna, text_to_bits, decode_dna, encode_dna,
+    generate_key,
+    encrypt,
+    decrypt,
+    encode_dna,
+    text_to_bits,
     purine_parity_digitize,
 )
 
@@ -115,7 +117,6 @@ def demo(message: str) -> None:
     print(f"  produces a corrupted plaintext -- with no error raised.\n")
     print(f"  Original ciphertext : {ciphertext[:20]}...")
 
-    # Flip the first base of the ciphertext
     tampered = flip_base(ciphertext[0]) + ciphertext[1:]
     print(f"  Tampered ciphertext : {tampered[:20]}...")
     print(f"  (first base flipped : {ciphertext[0]} -> {tampered[0]})\n")

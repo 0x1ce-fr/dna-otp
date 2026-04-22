@@ -2,6 +2,20 @@
 
 import os
 
+__all__ = [
+    "text_to_bits",
+    "bits_to_text",
+    "encode_dna",
+    "decode_dna",
+    "generate_key",
+    "purine_parity_digitize",
+    "xor_bits",
+    "xor_sequences",
+    "encrypt",
+    "decrypt",
+    "secure_delete",
+]
+
 # Direct binary to DNA mapping (used for message encoding only)
 BIN_TO_DNA: dict[str, str] = {'00': 'A', '01': 'T', '10': 'C', '11': 'G'}
 DNA_TO_BIN: dict[str, str] = {v: k for k, v in BIN_TO_DNA.items()}
@@ -64,6 +78,10 @@ def generate_key(length_bases: int) -> str:
 
     Each pair of random bits maps to one DNA base:
         00 -> A, 01 -> T, 10 -> C, 11 -> G
+
+    Note: bases are extracted from bytes in groups of 4. If length_bases % 4 != 0,
+    the last byte contributes fewer than 4 bases -- remaining bits are discarded.
+    This is byte-boundary rounding, not a security issue.
     """
     bases: list[str] = []
     # ceil(length_bases / 4) bytes -- each byte yields exactly 4 bases (4 x 2 bits)
@@ -155,13 +173,26 @@ def decrypt(ciphertext: str, key: str) -> str:
 
 def secure_delete(path: str) -> None:
     """
-    Securely delete a file by overwriting its contents with random bytes
-    before unlinking. os.remove() alone leaves data recoverable on disk.
+    Attempt to securely delete a file by overwriting its contents with random
+    bytes before unlinking.
+
+    WARNING: this function does NOT guarantee secure erasure on modern systems.
+    - Journaled file systems (ext4, NTFS) may retain copies in the journal.
+    - SSDs with wear-leveling may write to a different physical block.
+    - Copy-on-write file systems (Btrfs, APFS, ZFS) never overwrite in place.
+
+    For strong guarantees, use full-disk encryption (e.g. BitLocker, LUKS)
+    so that key material is never written to disk in plaintext.
+
+    This implementation provides a best-effort mitigation on traditional HDDs
+    with non-journaled file systems only.
     """
     try:
         size = os.path.getsize(path)
-        with open(path, 'wb') as f:
+        with open(path, 'r+b') as f:
             f.write(os.urandom(size))
+            f.flush()
+            os.fsync(f.fileno())
     except OSError:
         pass
     finally:
